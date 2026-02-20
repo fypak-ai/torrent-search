@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torrent Search v6</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 20px 15px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #764ba2;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        /* Proxy config */
+        .proxy-panel {
+            max-width: 700px;
+            margin: 15px auto;
+            padding: 0 20px;
+        }
+        .proxy-toggle {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .proxy-toggle button {
+            background: none;
+            border: 1px solid #444;
+            color: #888;
+            padding: 4px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .proxy-toggle button:hover { color: #ccc; border-color: #667eea; }
+        .proxy-config {
+            display: none;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 16px 20px;
+        }
+        .proxy-config.open { display: block; }
+        .proxy-config h3 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #aaa;
+        }
+        .proxy-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .proxy-row select, .proxy-row input {
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        .proxy-row select { width: 130px; }
+        .proxy-row input { flex: 1; min-width: 200px; }
+        .proxy-row button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .btn-proxy-connect {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-proxy-off {
+            background: #333;
+            color: #ccc;
+        }
+        .proxy-status {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: none;
+        }
+        .proxy-status.ok { display: block; background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+        .proxy-status.error { display: block; background: rgba(244,67,54,0.15); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
+        .proxy-status.warning { display: block; background: rgba(255,152,0,0.15); color: #ff9800; border: 1px solid rgba(255,152,0,0.3); }
+        .proxy-info {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.6;
+        }
+        .proxy-info code {
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #aaa;
+        }
+        .proxy-active-bar {
+            text-align: center;
+            padding: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: none;
+        }
+        .proxy-active-bar.on {
+            display: block;
+            background: rgba(102,126,234,0.15);
+            color: #667eea;
+        }
+        /* Search */
+        .search-box {
+            display: flex;
+            max-width: 700px;
+            margin: 0 auto 25px;
+            padding: 0 20px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 1rem;
+            border: 2px solid #333;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            outline: none;
+        }
+        .search-box input:focus { border-color: #667eea; }
+        .search-box button {
+            padding: 14px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 0 12px 12px 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .search-box button:disabled { opacity: 0.5; }
+        /* Site status */
+        .site-status {
+            max-width: 900px;
+            margin: 0 auto 20px;
+            padding: 0 20px;
+            display: none;
+        }
+        .site-status-title { font-size: 0.85rem; color: #888; margin-bottom: 8px; }
+        .site-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+        .site-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid #333;
+            background: #1a1a1a;
+        }
+        .site-badge.has-results { border-color: #4caf50; background: rgba(76,175,80,0.15); color: #4caf50; }
+        .site-badge.no-results { border-color: #555; color: #666; opacity: 0.6; }
+        .site-badge.error { border-color: #f44336; background: rgba(244,67,54,0.1); color: #f44336; }
+        .site-badge .count { background: rgba(255,255,255,0.15); padding: 1px 8px; border-radius: 10px; font-size: 0.8rem; }
+        /* Loading */
+        .loading { text-align: center; padding: 40px; display: none; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #333; border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-sites { font-size: 0.85rem; color: #888; margin-top: 8px; }
+        /* Results */
+        .results { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
+        .result-count { color: #888; font-size: 0.9rem; margin-bottom: 15px; }
+        .result-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+        }
+        .result-card:hover { border-color: #444; }
+        .result-name { font-size: 1rem; font-weight: 600; margin-bottom: 10px; line-height: 1.4; word-break: break-word; }
+        .result-meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+        .source-tag { padding: 3px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+        .source-piratebay { background: #1a472a; color: #4caf50; }
+        .source-1337x { background: #2a1a1a; color: #ff6b6b; }
+        .source-yts { background: #1a2a1a; color: #6bcb77; }
+        .source-nyaa { background: #1a1a3a; color: #6b9bff; }
+        .source-eztv { background: #2a2a1a; color: #ffd93d; }
+        .source-hdr { background: #2a1a2a; color: #e066ff; }
+        .source-apache { background: #1a2a2a; color: #66cccc; }
+        .source-rede { background: #2a2a1a; color: #ffaa66; }
+        .source-baixar { background: #1a1a2a; color: #66aaff; }
+        .meta-item { font-size: 0.85rem; color: #888; }
+        .meta-item .seeds { color: #4caf50; font-weight: 600; }
+        .meta-item .leeches { color: #f44336; }
+        .result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn {
+            padding: 8px 18px; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 0.85rem; font-weight: 600;
+        }
+        .btn:hover { opacity: 0.8; }
+        .btn-magnet { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-copy { background: #2a2a2a; color: #ccc; border: 1px solid #444; }
+        .btn-copy.copied { background: #1a472a; color: #4caf50; border-color: #4caf50; }
+        .no-results { text-align: center; padding: 40px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Torrent Search</h1>
+        <div class="version-badge">v6 — 9 sites + proxy</div>
+    </div>
+
+    <div class="proxy-active-bar" id="proxyBar"></div>
+
+    <div class="proxy-panel">
+        <div class="proxy-toggle">
+            <button onclick="toggleProxy()">⚙️ Configurar Proxy</button>
+        </div>
+        <div class="proxy-config" id="proxyConfig">
+            <h3>🔒 Configuração de Proxy (necessário para desbloquear sites)</h3>
+            <div class="proxy-row">
+                <select id="proxyType">
+                    <option value="none">Sem proxy</option>
+                    <option value="socks5">SOCKS5</option>
+                    <option value="http">HTTP</option>
+                </select>
+                <input type="text" id="proxyUrl" placeholder="127.0.0.1:9150 (Tor) ou IP:porta">
+                <button class="btn-proxy-connect" onclick="connectProxy()">Conectar</button>
+                <button class="btn-proxy-off" onclick="disconnectProxy()">Desligar</button>
+            </div>
+            <div class="proxy-status" id="proxyStatus"></div>
+            <div class="proxy-info">
+                <strong>Seus sites estão bloqueados pelo provedor/rede.</strong> Use um proxy para contornar:<br>
+                🧅 <strong>Tor Browser</strong> (mais fácil): Instale o <a href="https://www.torproject.org/download/" target="_blank" style="color:#667eea">Tor Browser</a>, abra ele, e use <code>SOCKS5</code> + <code>127.0.0.1:9150</code><br>
+                🌐 <strong>VPN com SOCKS5</strong>: Se usa VPN, verifique se ela oferece proxy SOCKS5<br>
+                📡 <strong>Proxy HTTP</strong>: Qualquer proxy HTTP funciona (ex: da empresa, VPN, etc)
+            </div>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Nome do filme, série, jogo..." autofocus>
+        <button id="searchBtn" onclick="doSearch()">Buscar</button>
+    </div>
+
+    <div class="site-status" id="siteStatus">
+        <div class="site-status-title">📊 Resultado por site:</div>
+        <div class="site-badges" id="siteBadges"></div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Buscando em 9 sites simultaneamente...</div>
+        <div class="loading-sites">PirateBay • 1337x • YTS • Nyaa • EZTV • HDR • Apache • Rede • BaixarFilmes</div>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <script>
+        const input = document.getElementById('searchInput');
+        input.addEventListener('keypress', e => { if (e.key === 'Enter') doSearch(); });
+
+        const sourceClass = {
+            'The Pirate Bay': 'source-piratebay', '1337x': 'source-1337x', 'YTS': 'source-yts',
+            'Nyaa': 'source-nyaa', 'EZTV': 'source-eztv', 'HDR Torrent': 'source-hdr',
+            'Apache Torrent': 'source-apache', 'Rede Torrent': 'source-rede', 'Baixar Filmes HD': 'source-baixar',
+        };
+        const siteOrder = ['The Pirate Bay','1337x','YTS','Nyaa','EZTV','HDR Torrent','Apache Torrent','Rede Torrent','Baixar Filmes HD'];
+
+        function toggleProxy() {
+            document.getElementById('proxyConfig').classList.toggle('open');
+        }
+
+        async function connectProxy() {
+            const type = document.getElementById('proxyType').value;
+            const url = document.getElementById('proxyUrl').value.trim();
+            const status = document.getElementById('proxyStatus');
+
+            if (type === 'none') {
+                disconnectProxy();
+                return;
+            }
+
+            status.className = 'proxy-status';
+            status.style.display = 'block';
+            status.textContent = 'Conectando...';
+            status.style.color = '#888';
+            status.style.background = '#1a1a1a';
+            status.style.border = '1px solid #333';
+
+            try {
+                const resp = await fetch('/proxy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({type, url})
+                });
+                const data = await resp.json();
+                status.className = 'proxy-status ' + data.status;
+                status.textContent = data.message;
+                updateProxyBar();
+            } catch (err) {
+                status.className = 'proxy-status error';
+                status.textContent = 'Erro: ' + err.message;
+            }
+        }
+
+        async function disconnectProxy() {
+            const status = document.getElementById('proxyStatus');
+            try {
+                await fetch('/proxy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({type: 'none'})
+                });
+                status.className = 'proxy-status ok';
+                status.textContent = 'Proxy desativado';
+                document.getElementById('proxyType').value = 'none';
+                updateProxyBar();
+            } catch (err) {
+                status.className = 'proxy-status error';
+                status.textContent = 'Erro: ' + err.message;
+            }
+        }
+
+        async function updateProxyBar() {
+            try {
+                const resp = await fetch('/proxy/status');
+                const data = await resp.json();
+                const bar = document.getElementById('proxyBar');
+                if (data.enabled) {
+                    bar.className = 'proxy-active-bar on';
+                    bar.textContent = '🔒 Proxy ativo: ' + data.type.toUpperCase() + ' ' + data.url;
+                } else {
+                    bar.className = 'proxy-active-bar';
+                }
+            } catch (e) {}
+        }
+
+        async function doSearch() {
+            const q = input.value.trim();
+            if (!q) return;
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('siteStatus').style.display = 'none';
+
+            try {
+                const resp = await fetch('/search?q=' + encodeURIComponent(q));
+                const data = await resp.json();
+                const badges = document.getElementById('siteBadges');
+                badges.innerHTML = '';
+                const stats = data.site_stats || {};
+                siteOrder.forEach(site => {
+                    if (!(site in stats)) return;
+                    const count = stats[site];
+                    const badge = document.createElement('span');
+                    if (count > 0) {
+                        badge.className = 'site-badge has-results';
+                        badge.innerHTML = `${site} <span class="count">${count}</span>`;
+                    } else if (count === 0) {
+                        badge.className = 'site-badge no-results';
+                        badge.textContent = `${site}: 0`;
+                    } else {
+                        badge.className = 'site-badge error';
+                        badge.textContent = `${site}: erro`;
+                    }
+                    badges.appendChild(badge);
+                });
+                document.getElementById('siteStatus').style.display = 'block';
+
+                const container = document.getElementById('results');
+                const results = data.results || [];
+                if (results.length === 0) {
+                    container.innerHTML = '<div class="no-results">Nenhum resultado encontrado 😕</div>';
+                } else {
+                    const totalSites = Object.values(stats).filter(v => v > 0).length;
+                    container.innerHTML = `<div class="result-count">${results.length} resultados de ${totalSites} site(s)</div>`;
+                    results.forEach((r, i) => {
+                        const cls = sourceClass[r.source] || 'source-piratebay';
+                        const isRedir = r.is_redirect;
+                        const magLabel = isRedir ? '🔗 Link' : '🧲 Magnet';
+                        const magAction = isRedir
+                            ? `window.open('${r.magnet.replace(/'/g,"\\'")}','_blank')`
+                            : `window.location.href='${r.magnet.replace(/'/g,"\\'")}'`;
+                        let meta = `<span class="source-tag ${cls}">${r.source}</span>`;
+                        if (r.seeds > 0) meta += `<span class="meta-item">▲ <span class="seeds">${r.seeds} seeds</span></span>`;
+                        if (r.leeches > 0) meta += `<span class="meta-item">▼ <span class="leeches">${r.leeches} leeches</span></span>`;
+                        if (r.size && r.size !== 'N/A') meta += `<span class="meta-item">${r.size}</span>`;
+                        container.innerHTML += `
+                            <div class="result-card">
+                                <div class="result-name">${r.name}</div>
+                                <div class="result-meta">${meta}</div>
+                                <div class="result-actions">
+                                    <button class="btn btn-magnet" onclick="${magAction}">${magLabel}</button>
+                                    <button class="btn btn-copy" id="copy-${i}" onclick="copyMagnet(${i},'${r.magnet.replace(/'/g,"\\'")}')">📋 Copiar</button>
+                                </div>
+                            </div>`;
+                    });
+                }
+            } catch (err) {
+                document.getElementById('results').innerHTML = `<div class="no-results">Erro: ${err.message}</div>`;
+            }
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('searchBtn').disabled = false;
+        }
+
+        function copyMagnet(idx, magnet) {
+            navigator.clipboard.writeText(magnet).then(() => {
+                const btn = document.getElementById('copy-'+idx);
+                btn.textContent = '✅ Copiado!';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = '📋 Copiar'; btn.classList.remove('copied'); }, 2000);
+            });
+        }
+
+        // Check proxy status on load
+        updateProxyBar();
+    </script>
+</body>
+</html>
