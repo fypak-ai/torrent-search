@@ -1,53 +1,24 @@
-# 🔍 Torrent Search Aggregator
+# Torrent Search
 
-Busca em **9 sites de torrent** simultaneamente e retorna magnet links ordenados por seeds.
-
-## Sites
-
-### Internacionais
-- The Pirate Bay (API)
-- 1337x (scraping)
-- YTS (API)
-- Nyaa (scraping)
-- EZTV (API)
-
-### Brasileiros
-- HDR Torrent
-- Apache Torrent
-- Rede Torrent
-- Baixar Filmes HD
-
-## Instalação
-
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-Acesse: http://localhost:5000
-
-## Proxy (se sites estiverem bloqueados)
-
-Se seu provedor/rede bloqueia sites de torrent:
-
-1. Baixe e abra o [Tor Browser](https://www.torproject.org/download/)
-2. No app, clique em ⚙️ Configurar Proxy
-3. Selecione **SOCKS5** e digite `127.0.0.1:9150`
-4. Clique em **Conectar**
-
-Também funciona com proxy HTTP ou SOCKS5 de VPN.
-
-## Diagnóstico
-
-Acesse http://localhost:5000/test para verificar a conectividade com cada site.
+Buscador de torrents com streaming via Offcloud e envio para Dropbox.
 
 ## Stack
+- **Backend**: Node.js + Express (scraping server-side)
+- **Frontend**: React + Vite
+- **Deploy**: Railway
 
-- **Backend**: Python (Flask) + BeautifulSoup4 + Requests
-- **Frontend**: HTML/CSS/JS puro (dark mode)
-- **Proxy**: PySocks (SOCKS5/HTTP)
+## Fontes
+TPB, YTS, Nyaa, EZTV, 1337x, LimeTorrents, BTDigg, Torrentz2
 
-## Screenshots
+## Deploy no Railway
+1. Fork este repo
+2. Conecte ao Railway (New Project → Deploy from GitHub)
+3. Adicione a variável de ambiente `OFFCLOUD_TOKEN`
+4. Deploy automático
 
-![search](https://img.shields.io/badge/9_sites-simultaneamente-667eea)
-![proxy](https://img.shields.io/badge/proxy-SOCKS5%20%2F%20HTTP-764ba2)
+## Dev local
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
